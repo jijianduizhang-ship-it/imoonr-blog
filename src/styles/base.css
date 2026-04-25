@@ -1,0 +1,564 @@
+/* ================================
+   CSS 变量定义
+   ================================ */
+
+:root,
+[data-theme="light"] {
+  --accent: #2563eb;
+  --accent-dark: #1e40af;
+  --accent-surface: #f3f8ff;
+  --background: #fcfdff;
+  --background-secondary: #f4f8fc;
+  --text-primary: #0f172a;
+  --text-secondary: #5f6f85;
+  --border: #dbe4f0;
+
+  /* 圆角：全站统一；特小/胶囊在局部写死 2px / 9999px */
+  --radius: 8px;
+
+  /**
+   * 与 body > header 吸顶后的可视高度对齐（导航 + 年度进度等）。
+   * 用于文章目录 sticky top、标题锚点 scroll-margin。
+   */
+  --site-header-sticky-offset: 5.25rem;
+}
+
+[data-theme="dark"] {
+  --accent: #60a5fa;
+  --accent-dark: #3b82f6;
+  --accent-surface: #0f172a;
+  --background: #0b1220;
+  --background-secondary: #111c2e;
+  --text-primary: #e5edf8;
+  --text-secondary: #9cb0c9;
+  --border: #243246;
+}
+
+/* ================================
+   全局重置
+   ================================ */
+
+* {
+  box-sizing: border-box;
+}
+
+/* ================================
+   根元素与基础排版
+   ================================ */
+
+html {
+  font-family:
+    "PingFang SC", "Hiragino Sans GB", "Source Han Sans CN", "Noto Sans CJK SC",
+    "Microsoft YaHei", Roboto, "Helvetica Neue", Helvetica, Arial, sans-serif;
+  background: var(--background);
+  color: var(--text-primary);
+  scroll-behavior: smooth;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--background);
+  color: var(--text-primary);
+  line-height: 1.65;
+}
+
+/* ================================
+   链接（全局统一样式）
+   ================================ */
+
+a {
+  color: var(--accent);
+  text-decoration: none;
+  text-decoration-thickness: 0.08em;
+  text-underline-offset: 0.18em;
+  transition:
+    color 0.2s ease,
+    text-decoration-color 0.2s ease;
+  cursor: pointer;
+}
+
+a:hover {
+  text-decoration: underline;
+  text-decoration-thickness: 0.08em;
+}
+
+a:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* 标题内链接与全局 a 一致（避免与 h1–h6 字色规则叠在一起发灰） */
+:is(h1, h2, h3, h4, h5, h6) a {
+  color: var(--accent);
+}
+
+:is(h1, h2, h3, h4, h5, h6) a:hover {
+  color: var(--accent-dark);
+}
+
+*:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* ================================
+   标题（h1-h6）
+   ================================ */
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  margin: 1rem 0 1rem 0;
+  color: var(--text-primary);
+  font-weight: 650;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+
+h1 {
+  font-size: 2rem;
+}
+
+h2 {
+  font-size: 1.5rem;
+}
+
+h3 {
+  font-size: 1.25rem;
+}
+
+h4 {
+  font-size: 1.125rem;
+}
+
+h5 {
+  font-size: 1rem;
+}
+
+h6 {
+  font-size: 0.9375rem;
+}
+
+p {
+  margin: 0;
+}
+
+/* ================================
+   列表
+   ================================ */
+
+ul,
+ol,
+menu {
+  margin: 0;
+  padding-left: 1.25rem;
+}
+
+#main-content :is(.post-content, .page-content) :where(ul, ol, menu) {
+  list-style-position: outside;
+  padding-left: 1em;
+  margin: 1rem 0 1.15rem;
+}
+
+#main-content :is(.post-content, .page-content) :where(ul, menu) {
+  list-style-type: disc;
+}
+
+#main-content :is(.post-content, .page-content) :where(ol) {
+  list-style-type: decimal;
+}
+
+#main-content :is(.post-content, .page-content) :where(li) {
+  margin-bottom: 0.45rem;
+}
+
+#main-content :is(.post-content, .page-content) > :first-child {
+  margin-top: 0;
+}
+
+#main-content :is(.post-content, .page-content) > :last-child {
+  margin-bottom: 0;
+}
+
+#main-content :is(.post-content, .page-content) p {
+  margin: 0.85rem 0;
+}
+
+#main-content :is(.post-content, .page-content) :where(h2, h3, h4) {
+  margin-top: 2rem;
+  margin-bottom: 0.85rem;
+  line-height: 1.32;
+  letter-spacing: -0.005em;
+}
+
+#main-content :is(.post-content, .page-content) h2 {
+  font-size: 1.55rem;
+}
+
+#main-content :is(.post-content, .page-content) h3 {
+  font-size: 1.28rem;
+}
+
+#main-content :is(.post-content, .page-content) h4 {
+  font-size: 1.08rem;
+}
+
+/* 主容器下的导航/卡片列表默认不加缩进 */
+main > ul,
+main > section > ul {
+  list-style: none;
+  margin: 0;
+  padding-left: 0;
+  padding-inline-start: 0;
+}
+
+/* ================================
+   表格
+   ================================ */
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 1rem;
+  font-size: 0.9375rem;
+}
+
+th,
+td {
+  padding: 0.5rem;
+  border: 1px solid var(--border);
+  text-align: left;
+}
+
+th {
+  background: color-mix(in srgb, var(--accent) 4%, var(--background-secondary));
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+td {
+  color: var(--text-primary);
+}
+
+.responsive-table {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin-bottom: 1rem;
+}
+
+.responsive-table table {
+  margin-bottom: 0;
+}
+
+/* ================================
+   代码
+   ================================ */
+
+code {
+  font-family: "Roboto Mono", "SF Mono", Monaco, Inconsolata, monospace;
+  font-size: 0.875rem;
+}
+
+:not(pre) > code {
+  background: color-mix(in srgb, var(--accent) 10%, var(--background));
+  padding: 0.2em 0.4em;
+  border-radius: 4px;
+}
+
+pre {
+  padding: 10px 20px;
+  background: #f6f6f6;
+  overflow-x: auto;
+}
+
+[data-theme="dark"] pre {
+  background: var(--background-secondary);
+}
+
+/* ================================
+   引用
+   ================================ */
+
+blockquote {
+  margin: 1.25rem 0;
+  padding: 0.5rem 1rem 0.5rem 1.1rem;
+  border-left: 3px solid var(--accent);
+  color: color-mix(in srgb, var(--text-primary) 82%, var(--text-secondary));
+  font-size: 0.98rem;
+  line-height: 1.75;
+  background: color-mix(in srgb, var(--accent) 4%, var(--background));
+  border-radius: 0 var(--radius) var(--radius) 0;
+}
+
+blockquote > :first-child {
+  margin-top: 0;
+}
+
+blockquote > :last-child {
+  margin-bottom: 0;
+}
+
+/* ================================
+   图片与媒体
+   ================================ */
+
+img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+#main-content :is(.post-content, .page-content) img {
+  max-width: 80%;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+figure {
+  margin: 1.5rem 0;
+}
+
+figcaption {
+  margin-top: 0.5rem;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  text-align: center;
+  line-height: 1.6;
+}
+
+/* ================================
+   分割线
+   ================================ */
+
+hr {
+  margin: 1.5rem 0;
+  border: 0;
+  border-top: 1px solid var(--border);
+}
+
+@media (max-width: 768px) {
+  #main-content :is(.post-content, .page-content) :where(h2, h3, h4) {
+    margin-top: 1.75rem;
+  }
+
+  #main-content :is(.post-content, .page-content) img {
+    max-width: 100%;
+  }
+}
+
+/* ================================
+   按钮
+   ================================ */
+
+button {
+  font-family: inherit;
+  font-size: 100%;
+  line-height: inherit;
+  margin: 0;
+  padding: 0.5rem 1rem;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition:
+    border-color 0.2s ease,
+    color 0.2s ease;
+}
+
+button:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* ================================
+   表单输入
+   ================================ */
+
+input[type="text"],
+input[type="search"],
+input[type="email"],
+input[type="password"],
+input[type="number"],
+textarea {
+  font-family: inherit;
+  font-size: 100%;
+  line-height: inherit;
+  margin: 0;
+  padding: 0.5rem 0.75rem;
+  background: var(--background);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-primary);
+  transition: border-color 0.2s ease;
+}
+
+input[type="text"]:focus,
+input[type="search"]:focus,
+input[type="email"]:focus,
+input[type="password"]:focus,
+input[type="number"]:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+/* ================================
+   布局标签
+   ================================ */
+
+header {
+  background: var(--background);
+}
+
+/* 站点顶栏吸顶（文章页 <article> 内 <header> 不受影响） */
+body > header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+footer {
+  background: var(--background);
+  padding: 1rem 0 1.5rem;
+  width: 100%;
+}
+
+footer:not(.footer--no-margin-top) {
+  margin-top: auto;
+}
+
+main {
+  flex: 1;
+  width: 100%;
+  max-width: 1060px;
+  margin: 0 auto;
+  padding: 0 1.5rem 2rem;
+}
+
+.post {
+  width: 100%;
+  min-width: 0;
+}
+
+.post > .post-header {
+  width: 100%;
+}
+
+.post-header__main {
+  margin-bottom: 1.5rem;
+}
+
+.post-title {
+  margin: 0 0 0.75rem;
+  font-size: clamp(1.375rem, 3.25vw, 1.75rem);
+  line-height: 1.15;
+  text-align: center;
+}
+
+/* ================================
+   选择与高亮
+   ================================ */
+
+::selection {
+  background: var(--accent);
+  color: white;
+}
+
+mark {
+  background: transparent;
+  color: var(--accent);
+  font-weight: 600;
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 2px;
+}
+
+/* ================================
+   滚动条
+   ================================ */
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--text-secondary) 50%, transparent);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--accent);
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--text-secondary) 50%, transparent)
+    transparent;
+}
+
+/* ================================
+   响应式
+   ================================ */
+
+@media (max-width: 768px) {
+  h1 {
+    font-size: 1.75rem;
+  }
+
+  h2 {
+    font-size: 1.375rem;
+  }
+
+  h3 {
+    font-size: 1.1875rem;
+  }
+
+  h4 {
+    font-size: 1.0625rem;
+  }
+
+  main {
+    padding: 1.5rem 1rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

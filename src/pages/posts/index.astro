@@ -1,0 +1,31 @@
+---
+/**
+ * 博客列表（content/posts 长文）
+ */
+import { getCollection } from "astro:content";
+import Layout from "@/layouts/Layout.astro";
+import ListLayout from "@/layouts/ListLayout.astro";
+import Card from "@/components/Card.astro";
+import { SITE } from "@/config";
+import { PostUtils } from "@/utils/postUtils";
+
+export const pageSlug = "posts";
+export const pageTitle = `博客 | ${SITE.title}`;
+
+const sorted = PostUtils.sort(await getCollection("posts"));
+---
+
+<Layout title={pageTitle}>
+  <ListLayout
+    title="博客"
+    description="技术、生活等发布在博客目录下的长文，按最近更新排序。"
+  >
+    <ul class="post-cards-list m-0 list-none p-0" aria-label="博客列表">
+      {
+        sorted.map(post => (
+          <Card openInNewTab={false} dateFormat="absolute" {...post} />
+        ))
+      }
+    </ul>
+  </ListLayout>
+</Layout>

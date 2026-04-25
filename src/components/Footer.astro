@@ -1,0 +1,126 @@
+---
+/**
+ * 页脚组件
+ *
+ * @fileoverview 参考 zdyxry.github.io Footer：社交图标区 + 版权/备案/自定义链接
+ * @see https://github.com/zdyxry/zdyxry.github.io/blob/astro/src/components/Footer.astro
+ */
+
+import { SITE } from "@/config";
+import SocialIcon from "@/components/SocialIcon.astro";
+
+export interface Props {
+  /** 是否移除顶部外边距 */
+  noMarginTop?: boolean;
+  /** 是否显示社交链接区 */
+  showSocial?: boolean;
+}
+
+const currentYear = new Date().getFullYear();
+const { noMarginTop = false, showSocial = true } = Astro.props;
+
+const socialLinks = SITE.socialLinks ?? [];
+const hasSocial = showSocial && socialLinks.length > 0;
+
+/** 规范化链接：若为邮箱地址则补全 mailto:，避免被当作相对路径 */
+function normalizeSocialHref(url: string): string {
+  if (url.startsWith("mailto:") || url.startsWith("http")) return url;
+  if (url.includes("@")) return `mailto:${url}`;
+  return url;
+}
+---
+
+<footer class="footer" class:list={[{ "footer--no-margin-top": noMarginTop }]}>
+  <div class="footer-content">
+    <hr class="footer-hr" aria-hidden="true" />
+    {
+      hasSocial && (
+        <div class="social-links">
+          {socialLinks.map(link => {
+            const href = normalizeSocialHref(link.url);
+            const isExternal = href.startsWith("http");
+            return (
+              <a
+                href={href}
+                target={isExternal ? "_blank" : undefined}
+                rel={isExternal ? "noopener noreferrer" : undefined}
+                aria-label={link.name}
+              >
+                <SocialIcon name={link.icon} width={20} height={20} />
+              </a>
+            );
+          })}
+        </div>
+      )
+    }
+    <div class="footer-bottom">
+      <span class="copyright">
+        &#169; {currentYear}
+        {SITE.author}. All rights reserved.
+      </span>
+      {
+        SITE.icp && (
+          <>
+            <span class="separator" aria-hidden="true">
+              |
+            </span>
+            <a
+              href="https://beian.miit.gov.cn/"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              备案号 {SITE.icp}
+            </a>
+          </>
+        )
+      }
+    </div>
+  </div>
+</footer>
+
+<style is:global>
+  .footer-content {
+    max-width: 1060px;
+    margin: 0 auto;
+    padding: 0 1.5rem;
+  }
+
+  @media (max-width: 768px) {
+    .footer-content {
+      padding-left: 1rem;
+      padding-right: 1rem;
+    }
+  }
+
+  .footer-hr {
+    margin: 0 0 1rem;
+  }
+
+  .social-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    justify-content: center;
+    margin-bottom: 1rem;
+  }
+
+  .social-links a {
+    color: var(--text-secondary);
+    display: inline-flex;
+  }
+
+  .social-links a:hover {
+    color: var(--accent);
+  }
+
+  .footer-bottom {
+    text-align: center;
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+  }
+
+  .footer-bottom .separator {
+    margin: 0 0.5rem;
+    color: var(--border);
+  }
+</style>

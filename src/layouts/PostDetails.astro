@@ -1,0 +1,581 @@
+---
+/**
+ * 文章详情布局
+ *
+ * @fileoverview 渲染单篇文章：标题、元数据、正文（Content）、前后篇导航、标签列表，以及按 frontmatter 控制的评论/数学公式等功能。canonical 等元信息由本布局传给 Layout。
+ */
+import { render } from "astro:content";
+import type { BlogLikeEntry } from "@/utils/contentCollections";
+import { ArticleTime } from "@/utils/articleTime";
+import Layout from "@/layouts/Layout.astro";
+import Tag from "@/components/Tag.astro";
+import Photosuite from "@/components/Photosuite.astro";
+import ArticleToc from "@/components/ArticleToc.astro";
+import { PostUtils, trimUrlSegment } from "@/utils/postUtils";
+import IconChevronLeft from "@/assets/icons/IconChevronLeft.svg";
+import IconChevronRight from "@/assets/icons/IconChevronRight.svg";
+import IconTag from "@/assets/icons/IconTag.svg";
+import { CDN_KATEX_STYLESHEET, SITE } from "@/config";
+import { siteImageHref } from "@/utils/blogImages";
+
+export interface Props {
+  post: BlogLikeEntry;
+  posts: BlogLikeEntry[];
+}
+
+const { post, posts } = Astro.props;
+
+// 解构文章元数据
+const {
+  title,
+  author,
+  canonicalURL,
+  date,
+  updated,
+  tags,
+  math,
+  comments,
+  description: postDescription,
+  banner: bannerRaw,
+} = post.data;
+
+const imageDirName = PostUtils.getPostImageDirName(
+  post.id,
+  post.filePath,
+  date,
+  post.data.timezone,
+  post.data.slug ?? null,
+  post.collection
+);
+const bannerPath = PostUtils.resolveBlogImageRef(bannerRaw, imageDirName);
+const faviconPath = PostUtils.resolveArticleListFaviconPath(
+  post.data.favicon,
+  post.data.categories
+);
+const hasBanner = Boolean(bannerRaw?.trim());
+
+/** 解析 banner：`astro dev` 根相对；生产 `/images/...` 走 CDN（与 Photosuite） */
+const bannerSrc = bannerPath
+  ? PostUtils.isHttpUrl(bannerPath)
+    ? bannerPath
+    : siteImageHref(bannerPath.startsWith("/") ? bannerPath : `/${bannerPath}`)
+  : undefined;
+
+/** OG / JSON-LD：优先横幅图；否则若 `favicon` 为文章配图类 `/images/...`（非列表小图标路径）则用其作分享图 */
+let articleOgImage: string | undefined;
+if (bannerPath) {
+  articleOgImage = bannerSrc;
+} else if (faviconPath && /^\/images\//.test(faviconPath)) {
+  articleOgImage = siteImageHref(faviconPath);
+}
+let ogImageAltForLayout: string | undefined;
+if (articleOgImage) {
+  ogImageAltForLayout = hasBanner ? `${title} — 横幅` : `${title} — 列表图标`;
+}
+
+const bannerAltText = `${title} — 横幅`;
+
+// 渲染文章内容
+const { Content } = await render(post);
+const hasInlineImages = /!\[[\s\S]*?\]\([^)]+\)|<img\s/i.test(post.body ?? "");
+
+/** 文章描述：优先 frontmatter description，否则从正文提取（与 RSS 摘要逻辑一致，不含 banner） */
+const fullDescription =
+  postDescription?.trim() || PostUtils.getDescription(post.body ?? "");
+const plainText = (post.body ?? "")
+  .replace(/```[\s\S]*?```/g, " ")
+  .replace(/`[^`]*`/g, " ")
+  .replace(/!\[[^\]]*]\([^)]+\)/g, " ")
+  .replace(/\[[^\]]*]\([^)]+\)/g, " ")
+  .replace(/<[^>]+>/g, " ")
+  .replace(/[#>*_\-\n\r]/g, " ")
+  .replace(/\s+/g, " ")
+  .trim();
+const latinWordCount = (
+  plainText.match(/[A-Za-z0-9]+(?:['' -][A-Za-z0-9]+)*/g) || []
+).length;
+const cjkCharCount = (plainText.match(/[\u3400-\u9FFF]/g) || []).length;
+const estimatedWordCount = latinWordCount + cjkCharCount;
+const readingMinutes = Math.max(1, Math.ceil(estimatedWordCount / 300));
+
+/** 标题区发布/更新时间（与列表卡片同一套语义，详情页固定绝对日期） */
+const headerTime = ArticleTime.forDetailHeader(
+  date,
+  updated,
+  post.data.timezone
+);
+
+const breadcrumbItems = [
+  { name: "首页", item: SITE.website },
+  { name: "博客", item: new URL("/posts", SITE.website).toString() },
+  { name: title, item: canonicalHrefPlaceholder() },
+];
+
+function canonicalHrefPlaceholder() {
+  return "";
+}
+
+const layoutProps = {
+  title,
+  author,
+  description: fullDescription,
+  pubDatetime: date,
+  modDatetime: updated,
+  canonicalURL,
+  ...(articleOgImage ? { ogImage: articleOgImage } : {}),
+  ...(ogImageAltForLayout ? { ogImageAlt: ogImageAltForLayout } : {}),
+};
+
+/* ========== Prev/Next Posts ========== */
+const allPosts = posts.map(
+  ({ data: { title, date, timezone, slug }, id, filePath, collection }) => ({
+    path: PostUtils.getPath(
+      id,
+      filePath,
+      true,
+      date,
+      timezone,
+      slug,
+      collection
+    ),
+    title,
+  })
+);
+
+const currentPostPath = PostUtils.getPath(
+  post.id,
+  post.filePath,
+  true,
+  post.data.date,
+  post.data.timezone,
+  post.data.slug,
+  post.collection
+);
+
+const canonicalHref =
+  canonicalURL != null
+    ? String(canonicalURL)
+    : new URL(currentPostPath, SITE.website).toString();
+breadcrumbItems[breadcrumbItems.length - 1].item = canonicalHref;
+const breadcrumbStructuredData = {
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  itemListElement: breadcrumbItems.map((item, index) => ({
+    "@type": "ListItem",
+    position: index + 1,
+    name: item.name,
+    item: item.item,
+  })),
+};
+
+const relatedPostLimit = 6;
+const scoredRelatedPosts = posts
+  .filter(candidate => candidate.id !== post.id)
+  .map(candidate => {
+    const sharedTags = candidate.data.tags.filter(tag =>
+      tags.includes(tag)
+    ).length;
+    const score = sharedTags * 2;
+
+    return {
+      post: candidate,
+      score,
+      path: PostUtils.getPath(
+        candidate.id,
+        candidate.filePath,
+        true,
+        candidate.data.date,
+        candidate.data.timezone,
+        candidate.data.slug,
+        candidate.collection
+      ),
+    };
+  })
+  .sort((a, b) => {
+    if (b.score !== a.score) return b.score - a.score;
+
+    return (
+      new Date(b.post.data.updated ?? b.post.data.date).getTime() -
+      new Date(a.post.data.updated ?? a.post.data.date).getTime()
+    );
+  });
+
+const relatedPosts = [
+  ...scoredRelatedPosts.filter(item => item.score > 0),
+  ...scoredRelatedPosts.filter(item => item.score === 0),
+].slice(0, relatedPostLimit);
+
+const shareText = `${title} | ${SITE.title}`;
+const shareUrl = encodeURIComponent(canonicalHref);
+const shareTitle = encodeURIComponent(shareText);
+const shareDescription = encodeURIComponent(fullDescription);
+
+/** 订阅/分享卡片：仅用 @theme 映射色，不手写 color-mix */
+const postActionCardClass =
+  "flex h-full min-w-0 flex-col gap-[0.55rem] rounded-xl border border-border/90 bg-background-secondary/40 p-[0.95rem_1rem] transition-colors duration-200 ease-out hover:border-accent/30 hover:bg-accent/5";
+
+const postActionEyebrowClass =
+  "m-0 inline-flex items-center self-start rounded-full bg-accent/8 px-2 py-[0.14rem] text-[0.72rem] font-semibold uppercase tracking-[0.04em] text-accent";
+
+/** 相关文章卡片：内链 hover/focus 时抬高边框与底色 */
+const postRelatedCardClass =
+  "flex h-full min-w-0 flex-col gap-[0.45rem] rounded-[10px] border border-border/90 bg-background-secondary/30 px-[0.95rem] pb-[0.95rem] pt-[0.9rem] transition-colors duration-200 ease-out [&:has(a:hover)]:border-accent/30 [&:has(a:hover)]:bg-accent/5 [&:has(a:focus-visible)]:border-accent/30 [&:has(a:focus-visible)]:bg-accent/5";
+
+const currentPostIndex = allPosts.findIndex(a => a.path === currentPostPath);
+
+const prevPost = currentPostIndex > 0 ? allPosts[currentPostIndex - 1] : null;
+const nextPost =
+  currentPostIndex < allPosts.length - 1
+    ? allPosts[currentPostIndex + 1]
+    : null;
+
+/** 预加载样式转正样式用，避免 TS 把 onload 属性内容当代码解析 */
+const linkPreloadOnLoad = "this.onload=null;this.rel='stylesheet'";
+---
+
+<Layout {...layoutProps}>
+  {hasInlineImages && <Photosuite />}
+  {
+    bannerSrc && (
+      <link
+        slot="head"
+        rel="preload"
+        as="image"
+        href={bannerSrc}
+        fetchpriority="high"
+      />
+    )
+  }
+  {
+    tags.map((tag: string) => (
+      <meta slot="head" property="article:tag" content={tag} />
+    ))
+  }
+  <script
+    slot="head"
+    type="application/ld+json"
+    is:inline
+    set:html={JSON.stringify(breadcrumbStructuredData)}
+  />
+  <!-- KaTeX 数学公式样式（仅文章详情且启用公式时加载） -->
+  {
+    math && (
+      <link
+        slot="head"
+        rel="preload"
+        href={CDN_KATEX_STYLESHEET}
+        as="style"
+        crossorigin="anonymous"
+        referrerpolicy="no-referrer"
+        onload={linkPreloadOnLoad}
+      />
+    )
+  }
+  {
+    math && (
+      <noscript slot="head">
+        <link
+          rel="stylesheet"
+          href={CDN_KATEX_STYLESHEET}
+          crossorigin="anonymous"
+          referrerpolicy="no-referrer"
+        />
+      </noscript>
+    )
+  }
+
+  <article id="article" class="post w-full min-w-0" data-pagefind-body>
+    <header class="w-full">
+      <div
+        class="mb-4 text-sm text-muted [&_a]:text-muted [&_a:hover]:text-accent"
+        aria-label="面包屑导航"
+      >
+        <a href="/">首页</a>
+        <span class="mx-1.5 opacity-60" aria-hidden="true">/</span>
+        <a href="/posts">博客</a>
+      </div>
+
+      <section class="mb-6">
+        <h1
+          class="mt-0 mb-3 text-center text-[clamp(1.375rem,3.25vw,1.75rem)] leading-tight font-semibold text-foreground"
+        >
+          {title}
+        </h1>
+        <div
+          class="post-meta flex flex-wrap items-center justify-center gap-x-2 gap-y-2 text-center text-sm text-muted"
+        >
+          <span class="whitespace-nowrap tabular-nums"
+            >{readingMinutes} 分钟阅读</span
+          >
+          <span class="opacity-50" aria-hidden="true">·</span>
+          <div
+            class="inline-flex min-w-0 items-baseline gap-0.5"
+            title={headerTime.titleAttr}
+          >
+            <time
+              class="text-sm font-normal tracking-wide text-muted tabular-nums"
+              datetime={headerTime.iso}
+              data-date-format="absolute"
+            >
+              {headerTime.display}
+            </time>
+          </div>
+        </div>
+      </section>
+    </header>
+
+    {
+      bannerSrc && (
+        <img
+          id="post-banner"
+          class="mx-auto my-6 block h-auto w-full max-w-[min(100%,56rem)] rounded-lg"
+          src={bannerSrc}
+          alt={bannerAltText}
+          fetchpriority="high"
+          decoding="async"
+          sizes="(max-width: 768px) 100vw, min(100%, 56rem)"
+        />
+      )
+    }
+
+    <div
+      class="post-layout flex min-w-0 flex-col gap-5 lg:flex-row lg:items-start"
+    >
+      <div class="post-content min-w-0 flex-1 pb-4">
+        <Content />
+      </div>
+      <ArticleToc />
+    </div>
+  </article>
+
+  <!-- 正文以下：共用一条顶部分割线，子块之间只用间距，避免多条「横线」叠在一起 -->
+  <div
+    class="post-footer-stack clear-both w-full min-w-0 space-y-10 border-t border-border/80 pt-6 max-sm:space-y-9 max-sm:pt-5"
+  >
+    {
+      tags.length > 0 && (
+        <div class="flex items-start gap-3">
+          <span class="mt-0.5 shrink-0 text-muted" aria-hidden="true">
+            <IconTag />
+          </span>
+          <ul class="m-0 flex list-none flex-wrap gap-2 p-0" role="list">
+            {tags.map((tag: string) => (
+              <Tag tag={trimUrlSegment(tag)} tagName={tag} />
+            ))}
+          </ul>
+        </div>
+      )
+    }
+
+    <section class="action-section w-full min-w-0" aria-label="订阅与分享">
+      <div class="mb-4 block w-full min-w-0">
+        <h3 class="m-0 text-base font-medium">订阅与分享</h3>
+      </div>
+
+      <div class="action-grid grid w-full min-w-0 gap-4 sm:grid-cols-2">
+        <div class={postActionCardClass}>
+          <p class={postActionEyebrowClass}>订阅文章</p>
+          <h3 class="m-0 text-[0.98rem] leading-[1.35]">
+            订阅更新，不错过后续文章
+          </h3>
+          <p class="m-0 text-sm leading-relaxed text-muted">
+            直接通过 RSS 和 Telegram 订阅本站更新。
+          </p>
+          <div
+            class="action-buttons mt-auto flex flex-wrap gap-2 pt-1 max-sm:flex-col max-sm:[&>.btn]:w-full"
+          >
+            <a
+              class="btn btn-secondary inline-flex min-h-10 items-center justify-center rounded-lg border border-border bg-transparent px-4 py-2 text-sm font-medium text-accent no-underline transition-colors hover:border-accent hover:text-accent-strong"
+              href="/rss.xml"
+            >
+              订阅 RSS
+            </a>
+            <a
+              class="btn btn-secondary inline-flex min-h-10 items-center justify-center rounded-lg border border-border bg-transparent px-4 py-2 text-sm font-medium text-accent no-underline transition-colors hover:border-accent hover:text-accent-strong"
+              href="https://t.me/zhijunio"
+            >
+              关注 Telegram
+            </a>
+          </div>
+        </div>
+
+        <div class={postActionCardClass}>
+          <p class={postActionEyebrowClass}>分享文章</p>
+          <h3 class="m-0 text-[0.98rem] leading-[1.35]">
+            如果这篇有帮助，可以顺手转发
+          </h3>
+          <p class="m-0 text-sm leading-relaxed text-muted">
+            直接分享给同事、朋友，或者发到你的社交平台。
+          </p>
+          <div
+            class="action-buttons mt-auto flex flex-wrap gap-2 pt-1 max-sm:flex-col max-sm:[&>.btn]:w-full"
+          >
+            <a
+              class="btn btn-secondary inline-flex min-h-10 items-center justify-center rounded-lg border border-border bg-transparent px-4 py-2 text-sm font-medium text-accent no-underline transition-colors hover:border-accent hover:text-accent-strong"
+              href={`https://x.com/intent/tweet?text=${shareTitle}&url=${shareUrl}`}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              分享到 X
+            </a>
+            <a
+              class="btn btn-secondary inline-flex min-h-10 items-center justify-center rounded-lg border border-border bg-transparent px-4 py-2 text-sm font-medium text-accent no-underline transition-colors hover:border-accent hover:text-accent-strong"
+              href={`https://t.me/share/url?url=${shareUrl}&text=${shareTitle}`}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              分享到 Telegram
+            </a>
+            <a
+              class="btn btn-secondary inline-flex min-h-10 items-center justify-center rounded-lg border border-border bg-transparent px-4 py-2 text-sm font-medium text-accent no-underline transition-colors hover:border-accent hover:text-accent-strong"
+              href={`mailto:?subject=${shareTitle}&body=${shareDescription}%0A%0A${shareUrl}`}
+            >
+              邮件分享
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    {
+      relatedPosts.length > 0 && (
+        <section class="related-section w-full min-w-0" aria-label="相关文章">
+          <div class="mb-4 block w-full min-w-0">
+            <h3 class="m-0 text-base font-medium">相关文章</h3>
+          </div>
+          <div class="related-grid grid w-full min-w-0 gap-4 min-[960px]:grid-cols-3 sm:grid-cols-2">
+            {relatedPosts.map(({ post: relatedPost, path }) => (
+              <div class={postRelatedCardClass}>
+                <p class="m-0 text-[0.72rem] font-semibold tracking-[0.04em] text-muted uppercase">
+                  {relatedPost.data.tags
+                    .filter((t: string) => trimUrlSegment(t) !== "Others")
+                    .slice(0, 3)
+                    .join(" / ") || "—"}
+                </p>
+                <p class="m-0">
+                  <a
+                    href={path}
+                    class="leading-[1.42] text-accent no-underline hover:text-accent-strong hover:underline hover:underline-offset-[0.15em] focus-visible:text-accent-strong focus-visible:underline focus-visible:underline-offset-[0.15em]"
+                  >
+                    {relatedPost.data.title}
+                  </a>
+                </p>
+                <p class="m-0 line-clamp-3 text-[0.82rem] leading-relaxed text-muted">
+                  {PostUtils.getPlainTextDescription(
+                    (relatedPost.data.description?.trim() ||
+                      relatedPost.body) ??
+                      ""
+                  )}
+                </p>
+              </div>
+            ))}
+          </div>
+        </section>
+      )
+    }
+
+    <!-- Previous/Next Post Buttons -->
+    <nav class="post-nav mb-8 grid gap-4 sm:grid-cols-2" aria-label="文章导航">
+      <!-- 上一篇 -->
+      {
+        prevPost && (
+          <a
+            href={prevPost.path}
+            class="nav-link-prev flex items-center gap-2 rounded-[10px] border border-border px-4 py-3 text-base text-accent no-underline transition-colors hover:border-accent hover:text-accent-strong"
+          >
+            <IconChevronLeft />
+            {prevPost.title}
+          </a>
+        )
+      }
+      <!-- 下一篇 -->
+      {
+        nextPost && (
+          <a
+            href={nextPost.path}
+            class="nav-link-next flex items-center justify-end gap-2 rounded-[10px] border border-border px-4 py-3 text-right text-base text-accent no-underline transition-colors hover:border-accent hover:text-accent-strong"
+          >
+            {nextPost.title}
+            <IconChevronRight />
+          </a>
+        )
+      }
+    </nav>
+  </div>
+
+  <!-- 评论容器：与主栏同宽（不用 reading-wrap 窄栏） -->
+  {
+    comments && SITE.giscus.enabled && (
+      <script
+        is:inline
+        src="https://giscus.app/client.js"
+        data-repo="zhijunio/zhijunio.github.io"
+        data-repo-id="R_kgDOIwiKuA"
+        data-category="Announcements"
+        data-category-id="DIC_kwDOIwiKuM4C6yVl"
+        data-mapping="title"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="preferred_color_scheme"
+        data-lang="zh-CN"
+        data-loading="lazy"
+        crossorigin="anonymous"
+        async
+      />
+    )
+  }
+  <style is:global>
+    /**
+     * 正文 + 目录（≥lg）：TOC fixed 定位到页面右侧空白区。
+     * 移动端隐藏 TOC。
+     */
+    #article-toc {
+      display: none;
+    }
+
+    @media (min-width: 1024px) {
+      #article-toc {
+        display: block;
+        position: fixed;
+        right: 2rem;
+        top: 6rem;
+        width: 15rem;
+        max-height: calc(100vh - 10rem);
+        overflow-y: auto;
+        margin: 0;
+      }
+    }
+
+    .post-content :where(h2, h3, h4) {
+      scroll-margin-top: var(--site-header-sticky-offset);
+    }
+
+    #main-content .post-content {
+      line-height: 1.8;
+    }
+
+    #main-content .post-content img {
+      border-radius: 8px;
+    }
+  </style>
+
+  <script is:inline data-astro-rerun>
+    function onPageReady() {
+      window.scrollTo({ left: 0, top: 0, behavior: "instant" });
+    }
+    if (window._postDetailsAfterSwapHandler) {
+      document.removeEventListener(
+        "astro:after-swap",
+        window._postDetailsAfterSwapHandler
+      );
+    }
+    window._postDetailsAfterSwapHandler = onPageReady;
+    document.addEventListener(
+      "astro:after-swap",
+      window._postDetailsAfterSwapHandler
+    );
+    onPageReady();
+  </script>
+</Layout>

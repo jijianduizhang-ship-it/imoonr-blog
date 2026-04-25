@@ -1,0 +1,95 @@
+---
+import IconChevronUp from "@/assets/icons/IconChevronUp.svg";
+
+export interface Props {
+  class?: string;
+}
+
+const { class: className } = Astro.props;
+---
+
+<button
+  id="back-to-top"
+  aria-label="返回顶部"
+  class:list={["back-to-top-btn", className]}
+  data-scroll-threshold="300"
+>
+  <IconChevronUp />
+</button>
+
+<style is:global>
+  .back-to-top-btn {
+    position: fixed;
+    right: 1.25rem;
+    bottom: 1.25rem;
+    z-index: 50;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    background: var(--background);
+    color: var(--text-primary);
+    box-shadow: 0 2px 8px rgb(0 0 0 / 0.06);
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(8px);
+    transition:
+      opacity 0.2s ease,
+      visibility 0.2s ease,
+      transform 0.2s ease;
+  }
+
+  .back-to-top-btn--visible {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+  }
+
+  .back-to-top-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+</style>
+
+<script is:inline data-astro-rerun>
+  (function () {
+    const btn = document.getElementById("back-to-top");
+    const scrollThreshold = Number(btn?.dataset.scrollThreshold) || 300;
+
+    if (!btn) return;
+
+    function updateVisibility() {
+      const scrollTop = window.scrollY || document.documentElement.scrollTop;
+      const shouldShow = scrollTop >= scrollThreshold;
+
+      btn.classList.toggle("back-to-top-btn--visible", shouldShow);
+    }
+
+    // 使用 requestAnimationFrame 优化滚动性能
+    let ticking = false;
+    function onScroll() {
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          updateVisibility();
+          ticking = false;
+        });
+        ticking = true;
+      }
+    }
+
+    window.addEventListener("scroll", onScroll, { passive: true });
+    updateVisibility();
+
+    // 点击平滑滚动到顶部
+    btn.addEventListener("click", () => {
+      window.scrollTo({
+        top: 0,
+        behavior: "smooth",
+      });
+    });
+  })();
+</script>

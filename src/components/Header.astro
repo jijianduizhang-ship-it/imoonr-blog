@@ -1,0 +1,268 @@
+---
+import { SITE } from "@/config";
+import YearProgress from "./YearProgress.astro";
+
+const navLinks = [
+  { href: "/posts", text: "博客" },
+  { href: "/briefs", text: "周报" },
+  { href: "/wiki", text: "Wiki" },
+  { href: "/tags", text: "标签" },
+  { href: "/running", text: "跑步" },
+  ...(SITE.feeds.enabled
+    ? [{ href: "/feeds", text: SITE.feeds.navLabel }]
+    : []),
+  { href: "/about", text: "关于" },
+];
+
+// 获取当前路径，用于判断激活状态
+const { pathname } = Astro.url;
+---
+
+<header class="site-header">
+  <nav class="site-nav">
+    <a href="/" class="logo">{SITE.title}</a>
+    <div class="nav-right">
+      <ul class="nav-links">
+        {
+          navLinks.map(link => (
+            <li>
+              <a
+                href={link.href}
+                class={
+                  pathname === link.href || pathname.startsWith(link.href + "/")
+                    ? "active"
+                    : ""
+                }
+              >
+                {link.text}
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+      <a href="/search" class="search-link" aria-label="搜索">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+      </a>
+      {
+        SITE.lightAndDarkMode && (
+          <button id="theme-toggle" class="theme-toggle" aria-label="切换主题">
+            <svg
+              class="sun-icon"
+              xmlns="http://www.w3.org/2000/svg"
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <circle cx="12" cy="12" r="5" />
+              <line x1="12" y1="1" x2="12" y2="3" />
+              <line x1="12" y1="21" x2="12" y2="23" />
+              <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+              <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+              <line x1="1" y1="12" x2="3" y2="12" />
+              <line x1="21" y1="12" x2="23" y2="12" />
+              <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+              <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+            </svg>
+            <svg
+              class="moon-icon"
+              xmlns="http://www.w3.org/2000/svg"
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+            </svg>
+          </button>
+        )
+      }
+    </div>
+  </nav>
+  {SITE.showYearProgress && <YearProgress />}
+</header>
+
+<style is:global>
+  .site-nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    max-width: 1060px;
+    margin: 0 auto;
+    padding: 0.15rem 1.5rem;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  @media (max-width: 768px) {
+    .site-nav {
+      padding-left: 1rem;
+      padding-right: 1rem;
+    }
+  }
+
+  .logo {
+    font-weight: 700;
+    font-size: 1.125rem;
+    color: var(--text-primary);
+    text-decoration: none;
+  }
+
+  .logo:hover,
+  .logo:focus-visible {
+    color: var(--accent);
+    text-decoration: none;
+  }
+
+  .nav-right {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .nav-links {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.25rem 0.75rem;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .nav-links a {
+    color: var(--text-secondary);
+    font-size: 0.9375rem;
+    text-decoration: none;
+  }
+
+  .nav-links a:hover,
+  .nav-links a.active {
+    color: var(--accent);
+  }
+
+  .nav-links a.active {
+    font-weight: 600;
+  }
+
+  .search-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.35rem;
+    color: var(--text-secondary);
+    border-radius: 6px;
+  }
+
+  .search-link:hover {
+    color: var(--accent);
+    background: color-mix(in srgb, var(--accent) 8%, transparent);
+  }
+
+  .theme-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.35rem;
+    border: none;
+    background: transparent;
+    color: var(--text-secondary);
+    border-radius: 6px;
+  }
+
+  .theme-toggle:hover {
+    color: var(--accent);
+    background: color-mix(in srgb, var(--accent) 8%, transparent);
+  }
+
+  [data-theme="light"] .moon-icon,
+  [data-theme="dark"] .sun-icon {
+    display: none;
+  }
+</style>
+
+<script>
+  const themeToggle = document.getElementById("theme-toggle");
+  if (themeToggle?.dataset.bound === "1") {
+    // 避免脚本重复执行时重复绑定事件
+  } else if (themeToggle) {
+    themeToggle.dataset.bound = "1";
+
+    function updateThemeToggleLabel() {
+      if (!themeToggle) return;
+      const currentTheme =
+        document.documentElement.getAttribute("data-theme") || "light";
+      themeToggle.setAttribute(
+        "aria-label",
+        currentTheme === "dark" ? "切换到浅色模式" : "切换到深色模式"
+      );
+    }
+
+    function toggleTheme() {
+      const themeManager = (
+        window as Window & {
+          __theme?: { toggleTheme?: () => string };
+        }
+      ).__theme;
+
+      if (themeManager?.toggleTheme) {
+        themeManager.toggleTheme();
+        return;
+      }
+
+      const html = document.documentElement;
+      const currentTheme = html.getAttribute("data-theme") || "light";
+      const newTheme = currentTheme === "light" ? "dark" : "light";
+      html.setAttribute("data-theme", newTheme);
+      localStorage.setItem("theme", newTheme);
+      updateThemeToggleLabel();
+    }
+
+    updateThemeToggleLabel();
+    themeToggle.addEventListener("click", toggleTheme);
+
+    themeToggle.addEventListener("keydown", e => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        toggleTheme();
+      }
+    });
+
+    if (
+      (window as Window & { _themeToggleLabelHandler?: () => void })
+        ._themeToggleLabelHandler
+    ) {
+      window.removeEventListener(
+        "themechange",
+        (window as Window & { _themeToggleLabelHandler?: () => void })
+          ._themeToggleLabelHandler as EventListener
+      );
+    }
+
+    (
+      window as Window & { _themeToggleLabelHandler?: () => void }
+    )._themeToggleLabelHandler = updateThemeToggleLabel;
+    window.addEventListener("themechange", updateThemeToggleLabel);
+  }
+</script>
