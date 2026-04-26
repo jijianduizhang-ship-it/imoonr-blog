@@ -1,21 +1,20 @@
 ---
 title: "关于"
-description: 关于 ZhiJun：开发背景、正在使用的工具、联系方式，以及这个博客的更新记录。
+description: 关于 Pengfei：操作系统测试工程师、互联网副业探索者、以及这个博客的更新记录。
 ---
 
 ## 自我介绍
 
-你好，我是 zhijun，一个来自中国武汉的 Java 开发者，曾就职于阿里，目前就职于武汉多点，从事新零售、物联网相关的开发工作。
+你好，我是 Pengfei，一个来自中国长沙的操作系统测试工程师，从事操作系统适配测试工作（硬件、驱动、软件兼容性方向）。
 
-> 健康，爱情和使命，按照这个顺序，其它的都不重要。 ------纳瓦尔
+> 健康，爱情和使命，按照这个顺序，其它的都不重要。 ------ 纳瓦尔
 
 ## 找到我
 
-如果有任何工作机会、合作想法或只是想打个招呼，欢迎通过以下方式找到我。
+如果有任何工作机会、副业合作想法或只是想打个招呼，欢迎通过以下方式找到我。
 
-我的邮箱：zhijun.lab@gmail.com；我的社交账号：[Twitter](https://x.com/zhijunio)、[Telegram](https://t.me/zhijunio)、[GitHub](https://github.com/zhijunio)、[Wechat](/images/wechat.webp)
-
-我也有一些闲聊的兴趣群，有意向的话可以添加微信并备注来意，目前还在折腾的兴趣群包括生产力工具、AI、Vibe Coding 等。
+**邮箱：**[待补充]
+**社交账号：** [待补充]
 
 另外，我在 [VPS](/posts/notes-about-deploy-services-in-vps) 上自建了一些服务：[跑步](https://run.zhijun.io/)、[书签](https://linkding.zhijun.io/)、[Memos](https://memos.zhijun.io/)。
 
@@ -36,7 +35,7 @@ description: 关于 ZhiJun：开发背景、正在使用的工具、联系方式
 - [Teach Yourself Programming in Ten Years](https://norvig.com/21-days.html) - 十年自学编程
 - [Get better at programming by learning how things work](https://jvns.ca/blog/learn-how-things-work/) - 通过学习事物运作原理来提高编程技能。
 - [Learn In Public](https://www.swyx.io/learn-in-public/) - 公开你的学习
-- [Software Engineering - The Soft Parts](https://addyosmani.com/blog/software-engineering-soft-parts/) - 在软件工程领域学到的“软技能”
+- [Software Engineering - The Soft Parts](https://addyosmani.com/blog/software-engineering-soft-parts/) - 在软件工程领域学到的"软技能"
 - [How do I upskill myself, and what tools & techniques do I use?](https://www.youtube.com/watch?v=oOAaGvpQTCo) - 我该如何提升自己的技能？我需要使用哪些工具和技巧？
 - [Feeling Left Behind in Tech? This Is Your 90-Day Comeback Plan](https://www.sivalabs.in/feel-left-behind-in-tech-this-is-90-day-comeback-plan/) -
   技术从业者 90 天逆袭计划
